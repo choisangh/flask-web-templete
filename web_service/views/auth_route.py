@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request, g
 from web_service.views.forms.auth_form import LoginForm, RegisterForm
 from werkzeug import security
 from web_service.models.user import User as UserModel
@@ -6,20 +6,22 @@ from web_service.models.user import User as UserModel
 NAME = 'auth'
 bp = Blueprint(NAME, __name__, url_prefix='/auth')
 
-"""only for testing"""
-from dataclasses import dataclass
-USERS = []
-
-@dataclass
-class User:
-    user_id: str
-    user_name: str
-    password: str
-
-USERS.append(User('admin', 'admin', security.generate_password_hash('1234')))
-USERS.append(User('tester', 'tester', security.generate_password_hash('1234')))
 
 
+@bp.before_app_request
+def before_app_request():
+    """
+    앱 전체 before request -> session 사용자 정보
+    :return:
+    """
+    g.user = None
+    user_id = session.get('user_id')
+    if user_id:
+        user = UserModel.find_one_by_user_id(user_id)
+        if user:
+            g.user = user
+        else:
+            session.pop('user_id', None)
 
 @bp.route('/')
 def index():
@@ -33,13 +35,12 @@ def login():
     if form.validate_on_submit():
         user_id = form.data.get('user_id')
         password = form.data.get('password')
-        user = [user for user in USERS if user.user_id == user_id]
+        user = UserModel.find_one_by_user_id(user_id=user_id)
         if user:
-            user = user[0]
             if not security.check_password_hash(user.password, password):
                 flash('Password is not valid')
             else:
-                session['user_id'] = user_id
+                session['user_id'] = user.user_id
                 return redirect(url_for('base.index'))
         else:
             flash('User ID is not exists.')
@@ -56,18 +57,19 @@ def register():
         user_name = form.data.get('user_name')
         password = form.data.get('password')
         repassword = form.data.get('repassword')
-        user = [user for user in USERS if user.user_id == user_id]
+        user = UserModel.find_one_by_user_id(user_id=user_id)
         if user:
             flash('User Id is already exists.')
             return redirect(request.path)
         else:
-            USERS.append(
-                User(
+            g.db.add(
+                UserModel(
                     user_id=user_id,
                     user_name=user_name,
                     password=security.generate_password_hash(password)
                 )
             )
+            g.db.commit()
             session['user_id'] = user_id
             return redirect(url_for('base.index'))
         return f"{user_id} {user_name} {password} {repassword}"

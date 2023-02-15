@@ -1,5 +1,4 @@
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, g
 from flask_wtf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -15,7 +14,7 @@ def create_app():
 
     app.config['SECRET_KEY'] = 'test'
     app.config['SESSION_COOKIE_NAME'] = 'tomproject'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:dndo159753!@localhost/test?charset=utf8'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:password@localhost/test?charset=utf8'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     """DB INIT"""
     db.init_app(app)
@@ -34,6 +33,16 @@ def create_app():
     from web_service.views import auth_route
     app.register_blueprint(base_route.bp)
     app.register_blueprint(auth_route.bp)
+
+    """REQUEST HOOK"""
+    @app.before_request
+    def before_request():
+        g.db = db.session
+
+    @app.teardown_request
+    def teardown_request(response):
+        if hasattr(g, 'db'):
+            g.db.close()
 
     """CSRF INIT"""
     csrf.init_app(app)
