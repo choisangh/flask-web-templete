@@ -8,20 +8,18 @@ db = SQLAlchemy()
 migrate = Migrate()
 
 
-def create_app():
+def create_app(config=None):
     print('run: create_app()')
     app = Flask(__name__)
 
-    app.config['SECRET_KEY'] = 'test'
-    app.config['SESSION_COOKIE_NAME'] = 'tomproject'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:password@localhost/test?charset=utf8'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SWAGGER_UI_DOC_EXPANSION'] = 'list'
-
-    # 개발자 모드에서 캐시 유효기간 1초 처리
-    if app.config['DEBUG']:
-        app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 1
-        app.config['WFT_CSRF_ENABLED'] = False
+    from .configs import DevelopmentConfig, ProductionConfig
+    if not config:
+        if app.config['DEBUG']:
+            config = DevelopmentConfig()
+        else:
+            config = ProductionConfig()
+    print('run with:', config)
+    app.config.from_object(config)
 
     """CSRF INIT"""
     csrf.init_app(app)
@@ -53,8 +51,6 @@ def create_app():
     def teardown_request(response):
         if hasattr(g, 'db'):
             g.db.close()
-
-
 
     @app.errorhandler(404)
     def page_404(error):
