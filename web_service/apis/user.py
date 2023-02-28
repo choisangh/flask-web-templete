@@ -11,7 +11,8 @@ ns = Namespace(
 user = ns.model('User',{
     'id': fields.Integer(required=True, description='유저 고유 번호'),
     'user_id': fields.String(required=True, description='유저 아이디'),
-    'user_name': fields.String(required=True, description='유저 이름')
+    'user_name': fields.String(required=True, description='유저 이름'),
+    'created_at': fields.DateTime(description='가입일자')
 })
 
 post_parser = reqparse.RequestParser()
@@ -24,6 +25,7 @@ post_parser.add_argument('password', required=True, help='유저 패스워드')
 @ns.route('')
 @ns.response(409, 'User Id is already exists.')
 class UserList(Resource):
+
     @ns.marshal_with(user, skip_none=True)
     def get(self):
         """유저 복수 조회"""
@@ -52,7 +54,7 @@ class UserList(Resource):
 @ns.route('/<int:id>')
 @ns.param('id','유저 고유 번호')
 class User(Resource):
-    @ns.marshal_with(user, skip_none=True)
+    @ns.marshal_list_with(user, skip_none=True)
     def get(self, id):
         """유저 단수 조회"""
         data = UserModel.query.get_or_404(id)
