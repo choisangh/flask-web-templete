@@ -5,7 +5,7 @@ class Config:
     """Flask config"""
     SECRET_KEY = 'test'
     SESSION_COOKIE_NAME = 'tomproject'
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:password@localhost/test?charset=utf8'
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(BASE_PATH, "sqlite_test.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SWAGGER_UI_DOC_EXPANSION = 'list'
 
@@ -14,7 +14,7 @@ class DevelopmentConfig(Config):
     """Flask Config for dev"""
     DEBUG =True
     SEND_FILE_MAX_AGE_DEFAULT = 1
-    WFT_CSRF_ENABLED = False
+    WTF_CSRF_ENABLED = False
 
 
 class TestingConfig(DevelopmentConfig):
